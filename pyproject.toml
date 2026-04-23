@@ -1,0 +1,39 @@
+[project]
+name = "polyconfig"
+version = "1.0.1"
+description = "Load env vars from system or many env files with casting support. Create static hierarchy of classes for config with dot-notation config system similar to Firefox's `about:config`."
+readme = "README.md"
+requires-python = ">=3.12"
+authors = [{"name"="Kamil Cyganowski", email="kamil.cyganowski@gmail.com"}]
+dependencies = [
+    "addict>=2.4.0",
+]
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[dependency-groups]
+dev = [
+  "pytest",
+  "pytest-cov",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+addopts = "--cov=src --cov-report=html:.htmlcov/ -v --tb=short -s"
+env = [
+    "PYTHONBREAKPOINT=ipdb.set_trace",
+ ]
+
+[tool.coverage.run]
+omit = []
+
+[tool.coverage.report]
+skip_covered = true
+skip_empty = true
+show_missing = true
+fail_under = 100
+
+[tool.ruff]
+line-length = 120

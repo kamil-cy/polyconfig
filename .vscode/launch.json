@@ -1,0 +1,22 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "pytest",
+            "console": "integratedTerminal",
+            "consoleName": "pytest",
+            // "justMyCode": false,
+            "type": "debugpy",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "module": "pytest",
+            "args": [
+                "--cov=.",
+                "--cov-report=html:.htmlcov",
+                "-v",
+                "--tb=short",
+                "-s",
+            ],
+        },
+    ]
+}
