@@ -76,6 +76,15 @@ class TestConfigObj:
         assert isinstance(cfg.obj("Path")("."), Path)
         assert isinstance(cfg.obj("uuid4")(), UUID)
 
+    def test_variable_not_exists(self) -> None:
+        cfg = Config(objects={"Path": Path, "uuid4": uuid4}, raise_if_missing=False)
+        cfg.load_env_file(f"{path}/.env")
+        non_exist = cfg.obj("PathXYZ")
+        assert repr(non_exist) == "<MISSING>"
+        with pytest.raises(MissingEnvsError) as e:
+            cfg.raise_missing()
+        assert str(e.value) == "Could not found env variables: PathXYZ"
+
     def test_variable_exists_obj_not_exist(self) -> None:
         cfg = Config(objects={"Path": Path, "uuid4": uuid4})
         cfg.load_env_file(f"{path}/.env")

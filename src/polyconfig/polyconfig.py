@@ -149,7 +149,10 @@ class Config(dict):
                     )
         else:
             if default_object is self._MISSING:
-                raise ValueError
+                if raise_if_missing:
+                    raise ValueError
+                else:
+                    self._missing[env_name] = None
             obj = default_object
             if self.verbose:
                 logger.info(f"PolyConfig: empty value for '{env_name}', default to '{default_object}'")
