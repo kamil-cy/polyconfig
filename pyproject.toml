@@ -1,6 +1,6 @@
 [project]
 name = "polyconfig"
-version = "1.0.3"
+version = "1.0.4"
 description = "Load env vars from system or many env files with casting support. Create static hierarchy of classes for config with dot-notation config system similar to Firefox's `about:config`."
 readme = "README.md"
 requires-python = ">=3.12"

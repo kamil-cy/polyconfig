@@ -175,7 +175,8 @@ class Config(dict):
             else:
                 variables.append(f"{var_name}")
         msg = f"Could not found env variables: {prefix}{separator.join(variables)}{suffix}"
-        raise MissingEnvsError(msg)
+        if self._missing:
+            raise MissingEnvsError(msg)
 
 
 class DotTreeConfig(Dict):
