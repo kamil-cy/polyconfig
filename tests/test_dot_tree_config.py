@@ -4,7 +4,7 @@ from typing import Self
 
 import pytest
 
-from polyconfig import DotTreeConfig
+from polyconfig import DotTreeConfig, Missing
 
 # this stub of class should be between marks for generated content
 # class Config: ...
@@ -116,3 +116,26 @@ class TestDotTreeConfig:
         config.a.value = "a.value"
         result = config.attribute_typing("a", 1, [], None)
         assert result == ("int", "field(default_factory=int)")
+
+
+class TestDotTreeConfigPreventGeneratingIfMissingEnvs:
+    def test_generate_static_classes(self) -> None:
+        config = AppConfig()
+        config.a.value = "a.value"
+        config.attribute_typing("a", Missing(), [], None)
+        config.generate_static_classes(__file__)
+        assert hasattr(config, "missing")
+
+    def test_generate_dataclass(self) -> None:
+        buffer: list[str] = []
+        config = AppConfig()
+        config.attribute_typing("a", Missing(), [], None)
+        config.generate_dataclass("MyClass", {}, buffer)
+        assert hasattr(config, "missing")
+        assert buffer == []
+
+    def test_attribute_typing(self) -> None:
+        config = AppConfig()
+        result = config.attribute_typing("a", Missing(), [], None)
+        assert result == ("Missing", "field(default_factory=Missing)")
+        assert hasattr(config, "missing")

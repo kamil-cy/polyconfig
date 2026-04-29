@@ -8,6 +8,8 @@ from typing import Any
 
 from addict import Dict
 
+logger = logging.getLogger(__name__)
+
 
 def strautocast(value: str) -> Any:  # noqa: ANN401, PLR0911
     if not isinstance(value, str):
@@ -132,21 +134,19 @@ class Config(dict):
         if value is None and default_object is None:
             raise KeyError(env_name)
 
-        logger = self.objects["logger"] if "logger" in self.objects else logging.getLogger(__name__)
+        log = self.objects["logger"] if "logger" in self.objects else logger
 
         if value:
             try:
                 obj: T = self.objects[value]
                 if self.verbose:
-                    logger.info(f"PolyConfig: found '{value}' for '{env_name}'")
+                    log.info(f"PolyConfig: found '{value}' for '{env_name}'")
             except KeyError:
                 if default_object is self._MISSING:
                     raise
                 obj = default_object
                 if self.verbose:
-                    logger.warning(
-                        f"PolyConfig: could not find '{value}' for '{env_name}', default to '{default_object}'"
-                    )
+                    log.warning(f"PolyConfig: could not find '{value}' for '{env_name}', default to '{default_object}'")
         else:
             if default_object is self._MISSING:
                 if raise_if_missing:
@@ -155,7 +155,7 @@ class Config(dict):
                     self._missing[env_name] = None
             obj = default_object
             if self.verbose:
-                logger.info(f"PolyConfig: empty value for '{env_name}', default to '{default_object}'")
+                log.info(f"PolyConfig: empty value for '{env_name}', default to '{default_object}'")
         return obj
 
     def raise_missing(
@@ -205,6 +205,9 @@ class DotTreeConfig(Dict):
             new_content = old_lines[: start + 1] + generated + old_lines[end:]
 
             if old_lines != new_content:
+                if hasattr(DotTreeConfig, "missing"):
+                    logger.error("Failed to generate static classes, due to some missing values")
+                    return
                 with fn_open(target_file, "w") as f:
                     f.writelines(new_content)
 
@@ -216,6 +219,8 @@ class DotTreeConfig(Dict):
         hierarchy: list | None = None,
         line_end: str = "\n",
     ) -> None:
+        if hasattr(DotTreeConfig, "missing"):
+            return
         if hierarchy is None:
             hierarchy = []
         fields = []
@@ -243,6 +248,8 @@ class DotTreeConfig(Dict):
         classes: list[str],
         hierarchy: list | None = None,
     ) -> tuple | None:
+        if repr(value) == "<MISSING>":
+            setattr(DotTreeConfig, "missing", True)
         if hierarchy is None:
             hierarchy = []
         if isinstance(value, dict):
