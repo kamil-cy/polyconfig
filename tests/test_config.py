@@ -3,9 +3,21 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from polyconfig import Config
+from polyconfig import Config, Inherited, Missing, MissingEnvsError
 
 path = Path(__file__).parent
+
+
+class TestInherited:
+    def test_repr(self) -> None:
+        inherited = Inherited()
+        assert repr(inherited) == "<INHERITED>"
+
+
+class TestMissing:
+    def test_repr(self) -> None:
+        missing = Missing()
+        assert repr(missing) == "<MISSING>"
 
 
 class TestConfigCall:
@@ -85,3 +97,19 @@ class TestConfigObj:
         with pytest.raises(KeyError):
             cfg.obj("uuid_bad")
         cfg.obj("uuid_bad", None)
+
+
+class TestConfigRaiseMissing:
+    def test_raise(self) -> None:
+        cfg = Config(objects={"Path": Path, "uuid4": uuid4}, raise_if_missing=False)
+        cfg.load_env_file(f"{path}/.env")
+        e1 = cfg("MISSING_ENV_1")
+        e2 = cfg("MISSING_ENV_2", "default_missing")
+        e3 = cfg("MISSING_ENV_3")
+        assert repr(e1) == "<MISSING>"
+        assert e2 == "default_missing"
+        assert repr(e3) == "<MISSING>"
+        expect = "Could not found env variables: MISSING_ENV_1, MISSING_ENV_2 (default_missing), MISSING_ENV_3"
+        with pytest.raises(MissingEnvsError) as e:
+            cfg.raise_missing()
+        assert str(e.value) == expect

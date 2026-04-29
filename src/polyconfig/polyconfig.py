@@ -26,9 +26,23 @@ def strautocast(value: str) -> Any:  # noqa: ANN401, PLR0911
     return value
 
 
+class MissingEnvsError(Exception):
+    pass
+
+
+class Missing:
+    def __repr__(self) -> str:
+        return "<MISSING>"
+
+
+class Inherited:
+    def __repr__(self) -> str:
+        return "<INHERITED>"
+
+
 class Config(dict):
-    _MISSING = object()
-    _INHERITED = object()
+    _MISSING = Missing()
+    _INHERITED = Inherited()
 
     def __init__(
         self,
@@ -42,6 +56,7 @@ class Config(dict):
         self.raise_if_missing: bool = raise_if_missing
         self.objects = objects
         self.verbose = verbose
+        self._missing: dict[str, Any] = {}
 
     def load_environ(self) -> None:
         self.update(os.environ)
@@ -81,14 +96,23 @@ class Config(dict):
         default: T | object = _MISSING,
         cast: Callable | object = _MISSING,
         raise_if_missing: bool | object = _INHERITED,
-    ) -> T:
+    ) -> T | _MISSING:
         if raise_if_missing is self._INHERITED:
             raise_if_missing = self.raise_if_missing
 
         if raise_if_missing and default is self._MISSING:
             raw_value = self[env_name]
         else:
-            raw_value = self.get(env_name) if default is self._MISSING else self.get(env_name, default)
+            try:
+                raw_value = self[env_name]
+            except KeyError:
+                if default is self._MISSING:
+                    self._missing[env_name] = None
+                    return self._MISSING
+                self._missing[env_name] = default
+                raw_value = default
+
+            # raw_value = self.get(env_name) if default is self._MISSING else self.get(env_name, default)
         if cast is self._MISSING:
             return strautocast(raw_value)
         if cast:
@@ -130,6 +154,25 @@ class Config(dict):
             if self.verbose:
                 logger.info(f"PolyConfig: empty value for '{env_name}', default to '{default_object}'")
         return obj
+
+    def raise_missing(
+        self,
+        missing_with_defaults: bool = True,
+        include_default_values: bool = True,
+        separator: str = ", ",
+        prefix: str = "",
+        suffix: str = "",
+    ) -> None:
+        variables: list[str] = []
+        for var_name, default_value in self._missing.items():
+            if default_value:
+                if missing_with_defaults:
+                    default = f" ({default_value})" if include_default_values else ""
+                    variables.append(f"{var_name}{default}")
+            else:
+                variables.append(f"{var_name}")
+        msg = f"Could not found env variables: {prefix}{separator.join(variables)}{suffix}"
+        raise MissingEnvsError(msg)
 
 
 class DotTreeConfig(Dict):
